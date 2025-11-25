@@ -10,7 +10,6 @@ if (isset($_POST['action'])) {
     if ($_POST['action'] == 'save') {
         $data = [
             'subject' => sanitize_text_field($_POST['subject']),
-            'category' => sanitize_text_field($_POST['category']),
             'question_type' => sanitize_text_field($_POST['question_type']),
             'question_text' => wp_kses_post($_POST['question_text']),
             'points' => intval($_POST['points'])
@@ -126,14 +125,6 @@ $show_form = isset($_GET['action']) && in_array($_GET['action'], ['new', 'edit']
                                     <option value="<?php echo esc_attr($subj); ?>">
                                 <?php endforeach; ?>
                             </datalist>
-                        </td>
-                    </tr>
-                    
-                    <tr>
-                        <th><label for="category">Tỉnh/Danh mục *</label></th>
-                        <td>
-                            <input type="text" name="category" id="category" class="regular-text" 
-                                   value="<?php echo $editing ? esc_attr($edit_question->category) : ''; ?>" required>
                         </td>
                     </tr>
                     
@@ -272,7 +263,6 @@ $show_form = isset($_GET['action']) && in_array($_GET['action'], ['new', 'edit']
                     <th style="width:50px;">ID</th>
                     <th>Câu hỏi</th>
                     <th style="width:120px;">Môn học</th>
-                    <th style="width:120px;">Tỉnh</th>
                     <th style="width:150px;">Loại</th>
                     <th style="width:80px;">Điểm</th>
                     <th style="width:150px;">Thao tác</th>
@@ -287,7 +277,6 @@ $show_form = isset($_GET['action']) && in_array($_GET['action'], ['new', 'edit']
                                 <strong><?php echo wp_trim_words(strip_tags($q->question_text), 15); ?></strong>
                             </td>
                             <td><?php echo esc_html($q->subject); ?></td>
-                            <td><?php echo esc_html($q->category); ?></td>
                             <td>
                                 <?php
                                 $types = [
@@ -313,7 +302,7 @@ $show_form = isset($_GET['action']) && in_array($_GET['action'], ['new', 'edit']
                     <?php endforeach; ?>
                 <?php else: ?>
                     <tr>
-                        <td colspan="7">Không có câu hỏi nào.</td>
+                        <td colspan="6">Không có câu hỏi nào.</td>
                     </tr>
                 <?php endif; ?>
             </tbody>

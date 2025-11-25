@@ -172,11 +172,11 @@ foreach ($exams as $exam) {
                         </div>
 
                         <div class="exam-card-footer">
-                            <a href="?exam_id=<?php echo $exam->id; ?>&page=detail" class="btn btn-detail">
+                            <a href="exam-detail?exam_id=<?php echo $exam->id; ?>" class="btn btn-detail">
                                 📋 Chi tiết
                             </a>
                             <?php if ($can_attempt): ?>
-                                <a href="?exam_id=<?php echo $exam->id; ?>&page=test" class="btn btn-start">
+                                <a href="exam-test?exam_id=<?php echo $exam->id; ?>" class="btn btn-start">
                                     ▶️ Bắt đầu thi
                                 </a>
                             <?php else: ?>

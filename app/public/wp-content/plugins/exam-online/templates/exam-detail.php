@@ -68,7 +68,7 @@ $total_points = array_sum(array_column($questions, 'points'));
 <div class="exam-detail-container">
     <!-- Breadcrumb -->
     <div class="exam-breadcrumb">
-        <a href="?">← Danh sách đề thi</a>
+        <a href="../">← Danh sách đề thi</a>
     </div>
 
     <!-- Exam Info -->
@@ -291,11 +291,11 @@ $total_points = array_sum(array_column($questions, 'points'));
 
     <!-- Action Buttons -->
     <div class="exam-actions">
-        <a href="?" class="btn btn-secondary">
+        <a href="../" class="btn btn-secondary">
             ← Quay lại
         </a>
         <?php if ($can_attempt): ?>
-            <a href="?exam_id=<?php echo $exam_id; ?>&page=test" class="btn btn-primary btn-large">
+            <a href="exam-test?exam_id=<?php echo $exam_id; ?>" class="btn btn-primary btn-large">
                 ▶️ Bắt đầu làm bài
             </a>
         <?php endif; ?>

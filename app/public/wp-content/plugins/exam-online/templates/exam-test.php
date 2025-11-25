@@ -200,8 +200,8 @@ $enable_file_upload = get_option('exam_enable_file_upload', 1);
         <h2 id="result-title">Kết quả thi</h2>
         <div id="result-body"></div>
         <div class="modal-actions">
-            <a href="?exam_id=<?php echo $exam_id; ?>&page=detail" class="btn btn-primary">Xem chi tiết</a>
-            <a href="?" class="btn btn-secondary">Danh sách đề thi</a>
+            <a href="../exam-detail?exam_id=<?php echo $exam_id; ?>" class="btn btn-primary">Xem chi tiết</a>
+            <a href="../" class="btn btn-secondary">Danh sách đề thi</a>
         </div>
     </div>
 </div>

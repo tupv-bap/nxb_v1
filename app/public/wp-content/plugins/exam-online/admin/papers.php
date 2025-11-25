@@ -86,7 +86,7 @@ if ($editing) {
 
 $show_form = isset($_GET['action']) && in_array($_GET['action'], ['new', 'edit']);
 
-// Lấy danh sách câu hỏi cho selector
+// Lấy danh sách môn học và loại câu hỏi cho filter
 $all_subjects = $wpdb->get_col("SELECT DISTINCT subject FROM {$wpdb->prefix}exam_questions ORDER BY subject");
 ?>
 
@@ -183,13 +183,25 @@ $all_subjects = $wpdb->get_col("SELECT DISTINCT subject FROM {$wpdb->prefix}exam
                                 <option value="<?php echo esc_attr($subj); ?>"><?php echo esc_html($subj); ?></option>
                             <?php endforeach; ?>
                         </select>
+                        
+                        <select id="filter-type-select">
+                            <option value="">-- Chọn loại câu hỏi --</option>
+                            <option value="true_false">Đúng/Sai</option>
+                            <option value="single_choice">Trắc nghiệm (1 đáp án)</option>
+                            <option value="multiple_choice">Trắc nghiệm (nhiều đáp án)</option>
+                            <option value="essay">Tự luận</option>
+                        </select>
+                        
+                        <input type="text" id="filter-search" placeholder="Tìm kiếm câu hỏi...">
+                        
                         <button type="button" class="button" onclick="loadQuestions()">Tải câu hỏi</button>
+                        <button type="button" class="button" onclick="clearFilters()">Xóa lọc</button>
                     </div>
                     
                     <div id="available-questions" class="questions-box">
-                        <h4>Câu hỏi có sẵn</h4>
+                        <h4>Câu hỏi có sẵn (<span id="available-count">0</span>)</h4>
                         <div id="available-list" class="questions-list">
-                            <p>Chọn môn học và nhấn "Tải câu hỏi"</p>
+                            <p>Chọn bộ lọc và nhấn "Tải câu hỏi"</p>
                         </div>
                     </div>
                     
@@ -321,23 +333,33 @@ $all_subjects = $wpdb->get_col("SELECT DISTINCT subject FROM {$wpdb->prefix}exam
 
 <script>
 let allQuestions = [];
+let filteredQuestions = [];
 
 function loadQuestions() {
     const subject = document.getElementById('filter-subject-select').value;
-    if (!subject) {
-        alert('Vui lòng chọn môn học');
-        return;
-    }
+    const type = document.getElementById('filter-type-select').value;
+    const search = document.getElementById('filter-search').value;
     
     jQuery.post(ajaxurl, {
-        action: 'load_questions_by_subject',
-        subject: subject
+        action: 'load_questions_by_filters',
+        subject: subject,
+        type: type,
+        search: search
     }, function(response) {
         if (response.success) {
             allQuestions = response.data;
+            filteredQuestions = allQuestions;
             renderAvailableQuestions();
         }
     });
+}
+
+function clearFilters() {
+    document.getElementById('filter-subject-select').value = '';
+    document.getElementById('filter-type-select').value = '';
+    document.getElementById('filter-search').value = '';
+    document.getElementById('available-list').innerHTML = '<p>Chọn bộ lọc và nhấn "Tải câu hỏi"</p>';
+    document.getElementById('available-count').textContent = '0';
 }
 
 function renderAvailableQuestions() {
@@ -345,23 +367,26 @@ function renderAvailableQuestions() {
     const selectedIds = Array.from(document.querySelectorAll('#selected-list input[name="question_ids[]"]'))
         .map(input => parseInt(input.value));
     
-    container.innerHTML = allQuestions
-        .filter(q => !selectedIds.includes(q.id))
-        .map(q => `
-            <div class="question-item" data-id="${q.id}">
-                <strong>${q.id}.</strong>
-                ${q.question_text.substring(0, 100)}...
-                <span class="q-type">${q.question_type}</span>
-                <span class="q-points">${q.points}đ</span>
-                <button type="button" class="button-link add-question">+</button>
-            </div>
-        `).join('') || '<p class="empty-message">Không có câu hỏi nào</p>';
+    const available = filteredQuestions.filter(q => !selectedIds.includes(q.id));
+    
+    document.getElementById('available-count').textContent = available.length;
+    
+    if (available.length === 0) {
+        container.innerHTML = '<p class="empty-message">Không có câu hỏi nào phù hợp</p>';
+        return;
+    }
+    
+    container.innerHTML = available.map(q => `
+        <div class="question-item" data-id="${q.id}">
+            <strong>${q.id}.</strong>
+            ${q.question_text.substring(0, 100)}...
+            <span class="q-type">${q.question_type}</span>
+            <span class="q-points">${q.points}đ</span>
+            <button type="button" class="button-link add-question">+</button>
+        </div>
+    `).join('');
     
     attachQuestionEvents();
-}
-
-function renderSelectedQuestions() {
-    updateSelectedCount();
 }
 
 function attachQuestionEvents() {
@@ -390,6 +415,7 @@ function attachQuestionEvents() {
             
             item.remove();
             updateSelectedCount();
+            updateAvailableCount();
             attachRemoveEvents();
         };
     });
@@ -409,6 +435,11 @@ function attachRemoveEvents() {
 function updateSelectedCount() {
     const count = document.querySelectorAll('#selected-list .question-item').length;
     document.getElementById('selected-count').textContent = count;
+}
+
+function updateAvailableCount() {
+    const count = document.querySelectorAll('#available-list .question-item').length;
+    document.getElementById('available-count').textContent = count;
 }
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -451,10 +482,21 @@ document.addEventListener('DOMContentLoaded', function() {
     display: flex;
     gap: 10px;
     margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+
+.selector-controls select,
+.selector-controls input[type="text"] {
+    flex: 1;
+    min-width: 150px;
 }
 
 .questions-box {
     margin: 10px 0;
+}
+
+.questions-box h4 {
+    margin-bottom: 10px;
 }
 
 .questions-list {
@@ -522,5 +564,12 @@ document.addEventListener('DOMContentLoaded', function() {
     border-radius: 12px;
     font-size: 12px;
     font-weight: bold;
+}
+
+.empty-message {
+    color: #999;
+    font-style: italic;
+    text-align: center;
+    padding: 20px;
 }
 </style>

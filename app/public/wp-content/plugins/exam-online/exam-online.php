@@ -3,7 +3,7 @@
  * Plugin Name: Thi Online System
  * Plugin URI: https://example.com
  * Description: Hệ thống thi online hoàn chỉnh với quản lý đề thi, câu hỏi và thống kê
- * Version: 1.0.0
+ * Version: 1.0.1
  * Author: Your Name
  * Text Domain: exam-online
  */
@@ -42,11 +42,10 @@ class ExamOnlineSystem {
         global $wpdb;
         $charset = $wpdb->get_charset_collate();
         
-        // Bảng câu hỏi
+        // Bảng câu hỏi (đã bỏ trường category)
         $sql_questions = "CREATE TABLE IF NOT EXISTS {$wpdb->prefix}exam_questions (
             id bigint(20) NOT NULL AUTO_INCREMENT,
             subject varchar(100) NOT NULL,
-            category varchar(100) NOT NULL,
             question_type varchar(20) NOT NULL,
             question_text text NOT NULL,
             options text,
@@ -56,7 +55,7 @@ class ExamOnlineSystem {
             created_at datetime DEFAULT CURRENT_TIMESTAMP,
             PRIMARY KEY (id),
             KEY subject (subject),
-            KEY category (category)
+            KEY question_type (question_type)
         ) $charset;";
         
         // Bảng đề thi
@@ -109,8 +108,17 @@ class ExamOnlineSystem {
         dbDelta($sql_results);
         dbDelta($sql_limits);
         
+        // Check if category column exists in exam_questions and remove it
+        $column_exists = $wpdb->get_results("SHOW COLUMNS FROM {$wpdb->prefix}exam_questions LIKE 'category'");
+        if (!empty($column_exists)) {
+            $wpdb->query("ALTER TABLE {$wpdb->prefix}exam_questions DROP COLUMN category");
+        }
+        
         // Thêm options
         add_option('exam_max_attempts_per_day', 10);
+        add_option('exam_enable_file_upload', 1);
+        add_option('exam_max_file_size', 5);
+        add_option('exam_allowed_file_types', 'jpg,jpeg,png,pdf,doc,docx,xls,xlsx');
     }
     
     public function deactivate() {
@@ -140,8 +148,8 @@ class ExamOnlineSystem {
     
     public function enqueue_admin_assets($hook) {
         if (strpos($hook, 'exam-') !== false) {
-            wp_enqueue_style('exam-admin-css', EXAM_PLUGIN_URL . 'assets/admin.css', [], '1.0.0');
-            wp_enqueue_script('exam-admin-js', EXAM_PLUGIN_URL . 'assets/admin.js', ['jquery'], '1.0.0', true);
+            wp_enqueue_style('exam-admin-css', EXAM_PLUGIN_URL . 'assets/admin.css', [], '1.0.1');
+            wp_enqueue_script('exam-admin-js', EXAM_PLUGIN_URL . 'assets/admin.js', ['jquery'], '1.0.1', true);
             wp_localize_script('exam-admin-js', 'examAdmin', [
                 'ajaxurl' => admin_url('admin-ajax.php'),
                 'nonce' => wp_create_nonce('exam_admin_nonce')
@@ -150,11 +158,12 @@ class ExamOnlineSystem {
     }
     
     public function enqueue_frontend_assets() {
-        wp_enqueue_style('exam-frontend-css', EXAM_PLUGIN_URL . 'assets/frontend.css', [], '1.0.0');
-        wp_enqueue_script('exam-frontend-js', EXAM_PLUGIN_URL . 'assets/frontend.js', ['jquery'], '1.0.0', true);
+        wp_enqueue_style('exam-frontend-css', EXAM_PLUGIN_URL . 'assets/frontend.css', [], '1.0.1');
+        wp_enqueue_script('exam-frontend-js', EXAM_PLUGIN_URL . 'assets/frontend.js', ['jquery'], '1.0.1', true);
         wp_localize_script('exam-frontend-js', 'examData', [
             'ajaxurl' => admin_url('admin-ajax.php'),
-            'nonce' => wp_create_nonce('exam_frontend_nonce')
+            'nonce' => wp_create_nonce('exam_frontend_nonce'),
+            'autoSaveInterval' => get_option('exam_auto_save_interval', 30)
         ]);
     }
     
@@ -205,7 +214,7 @@ class ExamOnlineSystem {
         global $wpdb;
         $exam_id = intval($_POST['exam_id']);
         $answers = json_decode(stripslashes($_POST['answers']), true);
-        $user_ip = $this->get_user_ip();
+        $user_ip = exam_get_user_ip(); // Use the helper function
         
         // Kiểm tra giới hạn
         if (!$this->check_attempt_limit($user_ip, $exam_id)) {
@@ -249,9 +258,11 @@ class ExamOnlineSystem {
                 } elseif ($q->question_type === 'single_choice') {
                     $is_correct = ($user_answer === $correct);
                 } elseif ($q->question_type === 'multiple_choice') {
-                    sort($user_answer);
-                    sort($correct);
-                    $is_correct = ($user_answer === $correct);
+                    if (is_array($user_answer) && is_array($correct)) {
+                        sort($user_answer);
+                        sort($correct);
+                        $is_correct = ($user_answer === $correct);
+                    }
                 }
                 
                 if ($is_correct) {
@@ -300,7 +311,7 @@ class ExamOnlineSystem {
         check_ajax_referer('exam_frontend_nonce', 'nonce');
         
         $exam_id = intval($_POST['exam_id']);
-        $user_ip = $this->get_user_ip();
+        $user_ip = exam_get_user_ip(); // Use the helper function
         
         $can_attempt = $this->check_attempt_limit($user_ip, $exam_id);
         $remaining = $this->get_remaining_attempts($user_ip, $exam_id);
@@ -312,15 +323,6 @@ class ExamOnlineSystem {
     }
     
     // Helper functions
-    private function get_user_ip() {
-        if (!empty($_SERVER['HTTP_CLIENT_IP'])) {
-            return $_SERVER['HTTP_CLIENT_IP'];
-        } elseif (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
-            return $_SERVER['HTTP_X_FORWARDED_FOR'];
-        }
-        return $_SERVER['REMOTE_ADDR'];
-    }
-    
     private function check_attempt_limit($ip, $exam_id) {
         global $wpdb;
         $max_attempts = get_option('exam_max_attempts_per_day', 10);

@@ -6,7 +6,45 @@
 
 if (!defined('ABSPATH')) exit;
 
-// Load questions by subject (for paper form)
+// Load questions by filters (for paper form with multiple filters)
+add_action('wp_ajax_load_questions_by_filters', 'exam_load_questions_by_filters');
+function exam_load_questions_by_filters() {
+    global $wpdb;
+    
+    $subject = isset($_POST['subject']) ? sanitize_text_field($_POST['subject']) : '';
+    $type = isset($_POST['type']) ? sanitize_text_field($_POST['type']) : '';
+    $search = isset($_POST['search']) ? sanitize_text_field($_POST['search']) : '';
+    
+    $where = "1=1";
+    
+    if (!empty($subject)) {
+        $where .= $wpdb->prepare(" AND subject = %s", $subject);
+    }
+    
+    if (!empty($type)) {
+        $where .= $wpdb->prepare(" AND question_type = %s", $type);
+    }
+    
+    if (!empty($search)) {
+        $where .= $wpdb->prepare(" AND question_text LIKE %s", '%' . $wpdb->esc_like($search) . '%');
+    }
+    
+    $questions = $wpdb->get_results("
+        SELECT id, question_text, question_type, points 
+        FROM {$wpdb->prefix}exam_questions 
+        WHERE $where
+        ORDER BY id DESC
+    ");
+    
+    // Trim question text for display
+    foreach ($questions as $q) {
+        $q->question_text = wp_trim_words(strip_tags($q->question_text), 15);
+    }
+    
+    wp_send_json_success($questions);
+}
+
+// Load questions by subject (for backward compatibility)
 add_action('wp_ajax_load_questions_by_subject', 'exam_load_questions_by_subject');
 function exam_load_questions_by_subject() {
     global $wpdb;
@@ -191,12 +229,67 @@ function exam_upload_essay_file() {
     ]);
 }
 
-// Helper function
+/**
+ * Helper function to get real user IP address
+ * Fixed for localhost environment
+ */
 function exam_get_user_ip() {
-    if (!empty($_SERVER['HTTP_CLIENT_IP'])) {
-        return $_SERVER['HTTP_CLIENT_IP'];
-    } elseif (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
-        return $_SERVER['HTTP_X_FORWARDED_FOR'];
+    // Check for various header values that might contain the IP
+    $ip_keys = [
+        'HTTP_CLIENT_IP',
+        'HTTP_X_FORWARDED_FOR',
+        'HTTP_X_FORWARDED',
+        'HTTP_X_CLUSTER_CLIENT_IP',
+        'HTTP_FORWARDED_FOR',
+        'HTTP_FORWARDED',
+        'REMOTE_ADDR'
+    ];
+    
+    foreach ($ip_keys as $key) {
+        if (array_key_exists($key, $_SERVER) === true) {
+            foreach (explode(',', $_SERVER[$key]) as $ip) {
+                $ip = trim($ip);
+                
+                // Validate IP address
+                if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) !== false) {
+                    return $ip;
+                }
+            }
+        }
     }
-    return $_SERVER['REMOTE_ADDR'];
+    
+    // Fallback to REMOTE_ADDR
+    $ip = isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : '0.0.0.0';
+    
+    // Convert IPv6 localhost to IPv4
+    if ($ip === '::1') {
+        $ip = '127.0.0.1';
+    }
+    
+    // For localhost development, use a unique identifier based on session
+    if ($ip === '127.0.0.1' || $ip === 'localhost') {
+        // Try to use session ID if available
+        if (session_id() === '') {
+            session_start();
+        }
+        $session_id = session_id();
+        
+        // Create a unique IP-like identifier for localhost users
+        // This ensures different browsers/sessions are treated as different users
+        if (!empty($session_id)) {
+            // Convert session ID to a pseudo-IP format
+            $hash = substr(md5($session_id), 0, 8);
+            $ip = '127.0.' . hexdec(substr($hash, 0, 2)) . '.' . hexdec(substr($hash, 2, 2));
+        } else {
+            // If no session, use browser fingerprint
+            $fingerprint = md5(
+                $_SERVER['HTTP_USER_AGENT'] . 
+                (isset($_SERVER['HTTP_ACCEPT_LANGUAGE']) ? $_SERVER['HTTP_ACCEPT_LANGUAGE'] : '')
+            );
+            $hash = substr($fingerprint, 0, 8);
+            $ip = '127.1.' . hexdec(substr($hash, 0, 2)) . '.' . hexdec(substr($hash, 2, 2));
+        }
+    }
+    
+    return $ip;
 }

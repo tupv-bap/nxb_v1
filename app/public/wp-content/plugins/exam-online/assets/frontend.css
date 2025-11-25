@@ -1,0 +1,380 @@
+/* 
+ * Frontend CSS cho Plugin Thi Online
+ * File: assets/frontend.css
+ */
+
+/* Reset và Base */
+.exam-list-container *,
+.exam-detail-container *,
+.exam-test-container * {
+    box-sizing: border-box;
+}
+
+/* Common Styles */
+.exam-error {
+    background: #f8d7da;
+    color: #721c24;
+    padding: 20px;
+    border: 1px solid #f5c6cb;
+    border-radius: 8px;
+    text-align: center;
+    margin: 20px 0;
+}
+
+.exam-error a {
+    color: #721c24;
+    font-weight: 600;
+    text-decoration: underline;
+}
+
+/* Loading State */
+.exam-loading {
+    text-align: center;
+    padding: 60px 20px;
+}
+
+.exam-loading::after {
+    content: '';
+    display: inline-block;
+    width: 50px;
+    height: 50px;
+    border: 5px solid #f3f3f3;
+    border-top: 5px solid #3498db;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Responsive Image */
+.exam-test-container img,
+.exam-detail-container img,
+.exam-list-container img {
+    max-width: 100%;
+    height: auto;
+}
+
+/* Smooth Transitions */
+.btn,
+.answer-option,
+.exam-card,
+.nav-btn {
+    transition: all 0.3s ease;
+}
+
+/* Focus States */
+input:focus,
+textarea:focus,
+select:focus {
+    outline: 2px solid #3498db;
+    outline-offset: 2px;
+}
+
+/* Print Styles */
+@media print {
+    .exam-timer,
+    .exam-navigation,
+    .exam-submit-section,
+    .btn {
+        display: none !important;
+    }
+    
+    .exam-test-container {
+        max-width: 100%;
+    }
+}
+
+/* Accessibility */
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.exam-card,
+.question-card {
+    animation: fadeIn 0.5s ease;
+}
+
+/* Scrollbar Styling */
+.exam-test-container::-webkit-scrollbar,
+.exam-detail-container::-webkit-scrollbar {
+    width: 10px;
+}
+
+.exam-test-container::-webkit-scrollbar-track,
+.exam-detail-container::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 5px;
+}
+
+.exam-test-container::-webkit-scrollbar-thumb,
+.exam-detail-container::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 5px;
+}
+
+.exam-test-container::-webkit-scrollbar-thumb:hover,
+.exam-detail-container::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+/* Mobile Optimizations */
+@media (max-width: 480px) {
+    .exam-list-title {
+        font-size: 28px !important;
+    }
+    
+    .exam-test-title {
+        font-size: 22px !important;
+    }
+    
+    .btn {
+        font-size: 14px !important;
+        padding: 10px 20px !important;
+    }
+    
+    .question-text {
+        font-size: 16px !important;
+    }
+}
+
+/* Dark Mode Support (Optional) */
+@media (prefers-color-scheme: dark) {
+    .exam-card,
+    .question-card,
+    .exam-section {
+        background: #2c3e50;
+        color: #ecf0f1;
+    }
+    
+    .exam-description,
+    .meta-item,
+    .question-text {
+        color: #bdc3c7;
+    }
+    
+    .answer-option {
+        background: #34495e;
+        border-color: #4a5f7f;
+    }
+}
+
+/* Tooltips */
+[data-tooltip] {
+    position: relative;
+    cursor: help;
+}
+
+[data-tooltip]::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 8px 12px;
+    background: #2c3e50;
+    color: white;
+    font-size: 13px;
+    border-radius: 6px;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s;
+    margin-bottom: 5px;
+}
+
+[data-tooltip]:hover::after {
+    opacity: 1;
+}
+
+/* Success Messages */
+.exam-success {
+    background: #d4edda;
+    color: #155724;
+    padding: 15px 20px;
+    border: 1px solid #c3e6cb;
+    border-radius: 8px;
+    margin: 15px 0;
+}
+
+/* Warning Messages */
+.exam-warning {
+    background: #fff3cd;
+    color: #856404;
+    padding: 15px 20px;
+    border: 1px solid #ffeaa7;
+    border-radius: 8px;
+    margin: 15px 0;
+}
+
+/* Info Messages */
+.exam-info {
+    background: #d1ecf1;
+    color: #0c5460;
+    padding: 15px 20px;
+    border: 1px solid #bee5eb;
+    border-radius: 8px;
+    margin: 15px 0;
+}
+
+/* Skeleton Loading */
+.skeleton {
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: skeleton-loading 1.5s infinite;
+}
+
+@keyframes skeleton-loading {
+    0% {
+        background-position: 200% 0;
+    }
+    100% {
+        background-position: -200% 0;
+    }
+}
+
+/* Badge Variants */
+.badge-success {
+    background: #27ae60 !important;
+}
+
+.badge-danger {
+    background: #e74c3c !important;
+}
+
+.badge-warning {
+    background: #f39c12 !important;
+}
+
+.badge-info {
+    background: #3498db !important;
+}
+
+/* Responsive Tables */
+@media (max-width: 768px) {
+    table {
+        display: block;
+        overflow-x: auto;
+        white-space: nowrap;
+    }
+}
+
+/* Print Button */
+.btn-print {
+    background: #95a5a6;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.btn-print:hover {
+    background: #7f8c8d;
+}
+
+@media print {
+    .btn-print {
+        display: none;
+    }
+}
+
+/* Sticky Elements */
+.sticky-header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: white;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+/* Counter Animation */
+.counter {
+    animation: counter-up 2s ease-out;
+}
+
+@keyframes counter-up {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Notification Dot */
+.notification-dot {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    width: 10px;
+    height: 10px;
+    background: #e74c3c;
+    border-radius: 50%;
+    animation: pulse-dot 2s infinite;
+}
+
+@keyframes pulse-dot {
+    0%, 100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(1.2);
+        opacity: 0.8;
+    }
+}
+
+/* Gradient Text */
+.gradient-text {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* Card Hover Effects */
+.exam-card:hover {
+    box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+}
+
+/* Smooth Scroll */
+html {
+    scroll-behavior: smooth;
+}
+
+/* Selection Color */
+::selection {
+    background: #3498db;
+    color: white;
+}
+
+::-moz-selection {
+    background: #3498db;
+    color: white;
+}
